@@ -18,16 +18,30 @@ jobs:
 
     steps:
       - name: Descargar repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configurar Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-          cache: pip
 
       - name: Instalar dependencias de pruebas
         run: python -m pip install pytest
 
       - name: Ejecutar pruebas automáticas
         run: pytest -q
+
+  docker:
+    name: Construir y probar Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v5
+
+      - name: Construir imagen Docker
+        run: docker build -t operaciones-aereas-chile .
+
+      - name: Ejecutar pruebas dentro del contenedor
+        run: docker run --rm operaciones-aereas-chile
