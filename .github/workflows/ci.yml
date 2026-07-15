@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   pruebas:
@@ -45,3 +46,34 @@ jobs:
 
       - name: Ejecutar pruebas dentro del contenedor
         run: docker run --rm operaciones-aereas-chile
+
+  publicar:
+    name: Publicar imagen Docker en GHCR
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [pruebas, docker]
+
+    # Publica únicamente después de un push exitoso a main.
+    # No publica imágenes desde pull requests.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v5
+
+      - name: Iniciar sesión en GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
+            -u "${{ github.actor }}" \
+            --password-stdin
+
+      - name: Construir imagen para publicación
+        run: |
+          docker build \
+            -t ghcr.io/${{ github.repository }}:latest \
+            .
+
+      - name: Publicar imagen en GHCR
+        run: |
+          docker push \
+            ghcr.io/${{ github.repository }}:latest
